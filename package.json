@@ -1,0 +1,23 @@
+{
+  "name": "zec-battleship",
+  "version": "0.1.0",
+  "description": "Private wager Battleship on Zcash. Winner takes the shielded pot. Built for ZecHub Hackathon 3.0 (Games track).",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server/index.js",
+    "dev": "tsx watch src/server/index.ts",
+    "test": "tsx --test src/**/*.test.ts"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.5.0",
+    "@types/ws": "^8.5.12",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.2"
+  }
+}

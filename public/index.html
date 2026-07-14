@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ZEC Battleship — shielded wager on Zcash</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --abyss: #05080f;
+        --hull: #0b121f;
+        --hull-line: #16233a;
+        --sonar: #38e1c4;
+        --sonar-dim: #1c7a6c;
+        --sonar-glow: rgba(56, 225, 196, 0.35);
+        --gold: #f4b728; /* Zcash gold — reserved for money */
+        --gold-dim: #7a5e16;
+        --hit: #ff5470;
+        --ink: #dce7f2;
+        --ink-dim: #6b7d94;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        background: radial-gradient(circle at 50% -10%, #0a1426 0%, var(--abyss) 60%);
+        color: var(--ink);
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
+      .wrap { max-width: 1040px; margin: 0 auto; padding: 32px 20px 80px; }
+
+      header.top {
+        display: flex; align-items: baseline; justify-content: space-between;
+        gap: 16px; flex-wrap: wrap; margin-bottom: 28px;
+        border-bottom: 1px solid var(--hull-line); padding-bottom: 18px;
+      }
+      .brand { display: flex; align-items: baseline; gap: 12px; }
+      .brand h1 {
+        font-size: 22px; font-weight: 700; letter-spacing: -0.02em; margin: 0;
+      }
+      .brand .zec { color: var(--gold); }
+      .net-badge {
+        font-family: "JetBrains Mono", monospace; font-size: 11px;
+        text-transform: uppercase; letter-spacing: 0.12em;
+        color: var(--sonar); border: 1px solid var(--sonar-dim);
+        border-radius: 999px; padding: 4px 10px;
+      }
+      .tagline { color: var(--ink-dim); font-size: 13px; font-family: "JetBrains Mono", monospace; }
+
+      .panel {
+        background: linear-gradient(180deg, var(--hull) 0%, #070d18 100%);
+        border: 1px solid var(--hull-line); border-radius: 14px;
+        padding: 22px; margin-bottom: 20px;
+      }
+      .panel h2 {
+        font-size: 13px; text-transform: uppercase; letter-spacing: 0.14em;
+        color: var(--ink-dim); margin: 0 0 16px; font-weight: 500;
+        font-family: "JetBrains Mono", monospace;
+      }
+
+      label { display: block; font-size: 12px; color: var(--ink-dim); margin: 0 0 6px; letter-spacing: 0.04em; }
+      input[type="text"], input[type="number"] {
+        width: 100%; background: var(--abyss); border: 1px solid var(--hull-line);
+        color: var(--ink); border-radius: 8px; padding: 11px 13px;
+        font-family: "JetBrains Mono", monospace; font-size: 14px;
+      }
+      input:focus { outline: 2px solid var(--sonar-dim); outline-offset: 1px; border-color: var(--sonar-dim); }
+      .row { display: flex; gap: 14px; flex-wrap: wrap; }
+      .row > div { flex: 1; min-width: 180px; }
+
+      button {
+        font-family: "Space Grotesk", sans-serif; font-weight: 600; font-size: 14px;
+        cursor: pointer; border-radius: 8px; padding: 11px 18px;
+        border: 1px solid var(--sonar-dim); background: rgba(56,225,196,0.08);
+        color: var(--sonar); transition: background .15s, border-color .15s, transform .05s;
+      }
+      button:hover { background: rgba(56,225,196,0.16); border-color: var(--sonar); }
+      button:active { transform: translateY(1px); }
+      button:disabled { opacity: 0.4; cursor: not-allowed; }
+      button.gold { border-color: var(--gold-dim); background: rgba(244,183,40,0.1); color: var(--gold); }
+      button.gold:hover { background: rgba(244,183,40,0.2); border-color: var(--gold); }
+      button.ghost { border-color: var(--hull-line); background: transparent; color: var(--ink-dim); }
+
+      .mono { font-family: "JetBrains Mono", monospace; }
+      .hidden { display: none !important; }
+
+      /* Stake / pot readout */
+      .pot {
+        display: flex; align-items: baseline; gap: 10px;
+        font-family: "JetBrains Mono", monospace;
+      }
+      .pot .amt { color: var(--gold); font-size: 30px; font-weight: 700; letter-spacing: -0.01em; }
+      .pot .lbl { color: var(--ink-dim); font-size: 12px; text-transform: uppercase; letter-spacing: 0.12em; }
+      .pot.live .amt { text-shadow: 0 0 18px rgba(244,183,40,0.45); }
+
+      .memo-box {
+        font-family: "JetBrains Mono", monospace; font-size: 12px;
+        background: var(--abyss); border: 1px dashed var(--gold-dim);
+        border-radius: 8px; padding: 12px; color: var(--gold);
+        word-break: break-all; margin-top: 10px;
+      }
+      .addr { color: var(--ink-dim); }
+
+      /* Boards */
+      .boards { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+      @media (max-width: 760px) { .boards { grid-template-columns: 1fr; } }
+      .board-title {
+        font-family: "JetBrains Mono", monospace; font-size: 12px;
+        letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-dim);
+        margin-bottom: 10px; display: flex; justify-content: space-between;
+      }
+      .grid {
+        display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px;
+        aspect-ratio: 1; position: relative;
+      }
+      .grid.scope::after {
+        content: ""; position: absolute; inset: 0; border-radius: 6px;
+        box-shadow: inset 0 0 40px var(--sonar-glow); pointer-events: none;
+      }
+      .cell {
+        aspect-ratio: 1; border: 1px solid var(--hull-line); border-radius: 3px;
+        background: rgba(20,35,58,0.5); cursor: default; position: relative;
+        transition: background .12s;
+      }
+      .grid.targetable .cell { cursor: crosshair; }
+      .grid.targetable .cell:hover { background: rgba(56,225,196,0.14); border-color: var(--sonar-dim); }
+      .cell.ship { background: linear-gradient(180deg, #243b57, #16273c); border-color: #2f4a6b; }
+      .cell.hit::after, .cell.miss::after, .cell.sunk::after {
+        content: ""; position: absolute; inset: 22%; border-radius: 50%;
+      }
+      .cell.hit::after { background: var(--hit); box-shadow: 0 0 12px rgba(255,84,112,0.7); }
+      .cell.sunk { background: rgba(255,84,112,0.18); }
+      .cell.sunk::after { background: var(--hit); box-shadow: 0 0 14px rgba(255,84,112,0.9); }
+      .cell.miss::after { background: var(--sonar-dim); opacity: 0.7; }
+
+      .status-line {
+        font-family: "JetBrains Mono", monospace; font-size: 13px;
+        color: var(--sonar); min-height: 20px; margin-top: 4px;
+      }
+      .status-line.theirs { color: var(--ink-dim); }
+      .turn-pill {
+        display: inline-block; font-family: "JetBrains Mono", monospace; font-size: 11px;
+        padding: 3px 9px; border-radius: 999px; letter-spacing: 0.1em; text-transform: uppercase;
+      }
+      .turn-pill.you { background: rgba(56,225,196,0.15); color: var(--sonar); }
+      .turn-pill.them { background: rgba(107,125,148,0.15); color: var(--ink-dim); }
+
+      .fleet { display: flex; gap: 8px; flex-wrap: wrap; margin: 14px 0; }
+      .ship-chip {
+        font-family: "JetBrains Mono", monospace; font-size: 11px; padding: 6px 10px;
+        border: 1px solid var(--hull-line); border-radius: 6px; cursor: pointer;
+        color: var(--ink-dim); letter-spacing: 0.04em;
+      }
+      .ship-chip.active { border-color: var(--sonar); color: var(--sonar); background: rgba(56,225,196,0.08); }
+      .ship-chip.placed { color: var(--ink); border-color: var(--sonar-dim); }
+      .ship-chip.placed::before { content: "✓ "; color: var(--sonar); }
+
+      .log {
+        font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--ink-dim);
+        max-height: 130px; overflow-y: auto; line-height: 1.7;
+      }
+      .log .you { color: var(--sonar); }
+      .log .them { color: var(--ink); }
+      .toast {
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+        background: var(--hull); border: 1px solid var(--hull-line); border-radius: 10px;
+        padding: 12px 18px; font-family: "JetBrains Mono", monospace; font-size: 13px;
+        color: var(--ink); box-shadow: 0 8px 40px rgba(0,0,0,0.5); z-index: 50;
+        max-width: 90vw;
+      }
+      .toast.err { border-color: var(--hit); color: var(--hit); }
+      .win-banner {
+        text-align: center; padding: 30px;
+      }
+      .win-banner .big { font-size: 34px; font-weight: 700; letter-spacing: -0.02em; }
+      .win-banner .big.won { color: var(--gold); text-shadow: 0 0 24px rgba(244,183,40,0.5); }
+      .win-banner .big.lost { color: var(--ink-dim); }
+      .win-banner .txid { margin-top: 14px; font-family: "JetBrains Mono", monospace; font-size: 12px; color: var(--sonar); word-break: break-all; }
+      .hint { color: var(--ink-dim); font-size: 12px; line-height: 1.6; margin-top: 10px; }
+      .footer-note { color: var(--ink-dim); font-size: 11px; font-family: "JetBrains Mono", monospace; text-align: center; margin-top: 30px; line-height: 1.7; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <div class="brand">
+          <h1><span class="zec">ZEC</span> Battleship</h1>
+          <span class="tagline">shielded wager · winner takes the pot</span>
+        </div>
+        <span class="net-badge" id="netBadge">—</span>
+      </header>
+
+      <!-- LOBBY -->
+      <section class="panel" id="lobby">
+        <h2>Wardroom</h2>
+        <div class="row">
+          <div>
+            <label>Create a match — stake per player (ZEC)</label>
+            <input type="number" id="stakeInput" value="0.1" min="0.0001" step="0.0001" />
+          </div>
+          <div style="display:flex; align-items:flex-end;">
+            <button id="createBtn" class="gold" style="width:100%">Open a table</button>
+          </div>
+        </div>
+        <div style="height:1px; background:var(--hull-line); margin:20px 0;"></div>
+        <div class="row">
+          <div>
+            <label>Join a match — code</label>
+            <input type="text" id="joinCode" placeholder="e.g. 3f9a1c2b" />
+          </div>
+          <div>
+            <label>Your payout address (shielded)</label>
+            <input type="text" id="payoutAddr" placeholder="u1… where the pot is sent" />
+          </div>
+          <div style="display:flex; align-items:flex-end;">
+            <button id="joinBtn" style="width:100%">Take a seat</button>
+          </div>
+        </div>
+        <p class="hint">
+          Two captains each stake the same amount in shielded ZEC. Boards are committed with a
+          SHA-256 hash before the first shot, so neither side — nor the server — can move a ship
+          mid-game. The winner receives the whole pot to their shielded address.
+        </p>
+      </section>
+
+      <!-- DEPOSIT -->
+      <section class="panel hidden" id="deposit">
+        <h2>Escrow — fund your stake</h2>
+        <div class="pot live"><span class="amt" id="potAmt">—</span><span class="lbl">pot at stake</span></div>
+        <p class="hint">Send your stake as a shielded payment to the match escrow, with this exact memo so it's credited to you:</p>
+        <label style="margin-top:14px;">Escrow address</label>
+        <div class="memo-box addr" id="depAddr">—</div>
+        <label style="margin-top:12px;">Required memo</label>
+        <div class="memo-box" id="depMemo">—</div>
+        <div style="margin-top:16px; display:flex; gap:12px; flex-wrap:wrap;">
+          <button id="sentBtn" class="gold">I've sent the stake</button>
+          <span class="status-line" id="depStatus"></span>
+        </div>
+        <p class="hint" id="depPlayers"></p>
+      </section>
+
+      <!-- PLACEMENT -->
+      <section class="panel hidden" id="placement">
+        <h2>Deploy your fleet</h2>
+        <div class="fleet" id="fleet"></div>
+        <div style="display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap;">
+          <button id="rotateBtn" class="ghost">Rotate (now: horizontal)</button>
+          <button id="randomBtn" class="ghost">Auto-place</button>
+          <button id="clearBtn" class="ghost">Clear</button>
+          <button id="commitBtn" class="gold" disabled>Commit fleet & lock in</button>
+        </div>
+        <div style="max-width:420px;">
+          <div class="grid scope" id="placeGrid"></div>
+        </div>
+        <p class="hint">Click a ship, then click the grid to drop it. Once both captains commit, fire begins.</p>
+      </section>
+
+      <!-- BATTLE -->
+      <section class="panel hidden" id="battle">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:12px;">
+          <div class="pot live"><span class="amt" id="battlePot">—</span><span class="lbl">pot</span></div>
+          <span id="turnPill" class="turn-pill them">standby</span>
+        </div>
+        <div class="boards">
+          <div>
+            <div class="board-title"><span>Enemy waters — fire here</span><span id="enemyTag"></span></div>
+            <div class="grid scope" id="enemyGrid"></div>
+            <div class="status-line" id="fireStatus"></div>
+          </div>
+          <div>
+            <div class="board-title"><span>Your fleet</span><span id="ownTag"></span></div>
+            <div class="grid scope" id="ownGrid"></div>
+            <div class="status-line theirs" id="incomingStatus"></div>
+          </div>
+        </div>
+        <div style="margin-top:18px;">
+          <h2>Battle log</h2>
+          <div class="log" id="log"></div>
+        </div>
+      </section>
+
+      <!-- RESULT -->
+      <section class="panel hidden" id="result">
+        <div class="win-banner">
+          <div class="big" id="resultBig">—</div>
+          <p class="hint" id="resultSub"></p>
+          <div class="txid" id="resultTxid"></div>
+        </div>
+      </section>
+
+      <p class="footer-note">
+        ZecHub Hackathon 3.0 · Games track · Boards committed via SHA-256 · escrow is custodial in this POC<br/>
+        upgrade path: FROST threshold-signed escrow · per-shot zero-knowledge proofs
+      </p>
+    </div>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

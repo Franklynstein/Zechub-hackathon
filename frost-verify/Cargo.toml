@@ -1,0 +1,11 @@
+[package]
+name = "frost-verify"
+version = "0.1.0"
+edition = "2021"
+
+# Proves ZEC Battleship's 2-of-3 threshold escrow protocol with real FROST.
+# Uses frost-ed25519 for portability; production uses RedPallas (Zcash Orchard).
+[dependencies]
+frost-ed25519 = "1"
+rand = "0.8"
+hex = "0.4"
